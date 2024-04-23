@@ -1,6 +1,7 @@
 {
   "name": "grpc-examples",
   "version": "0.1.0",
+  "type": "module",
   "dependencies": {
     "@grpc/proto-loader": "^0.6.0",
     "async": "^1.5.2",
