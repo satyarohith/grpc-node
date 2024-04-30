@@ -16,13 +16,14 @@
  *
  */
 
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const parseArgs = require('minimist');
+import { loadPackageDefinition, Server, ServerCredentials } from '@grpc/grpc-js';
+import { loadSync } from '@grpc/proto-loader';
+import parseArgs from 'minimist';
+import process from 'node:process';
 
-const PROTO_PATH = __dirname + '/../protos/echo.proto';
+const PROTO_PATH = import.meta.dirname + '/../protos/echo.proto';
 
-const packageDefinition = protoLoader.loadSync(
+const packageDefinition = loadSync(
   PROTO_PATH,
   {keepCase: true,
    longs: String,
@@ -30,19 +31,19 @@ const packageDefinition = protoLoader.loadSync(
    defaults: true,
    oneofs: true
   });
-const echoProto = grpc.loadPackageDefinition(packageDefinition).grpc.examples.echo;
+const echoProto = loadPackageDefinition(packageDefinition).grpc.examples.echo;
 
 const keepaliveOptions = {
   // If a client is idle for 15 seconds, send a GOAWAY
-  'grpc.max_connection_idle_ms': 15_000,
+  'grpc.max_connection_idle_ms': 1500,
   // If any connection is alive for more than 30 seconds, send a GOAWAY
-  'grpc.max_connection_age_ms': 30_000,
+  'grpc.max_connection_age_ms': 3000,
   // Allow 5 seconds for pending RPCs to complete before forcibly closing connections
-  'grpc.max_connection_age_grace_ms': 5_000,
+  'grpc.max_connection_age_grace_ms': 500,
   // Ping the client every 5 seconds to ensure the connection is still active
-  'grpc.keepalive_time_ms': 5_000,
+  'grpc.keepalive_time_ms': 5_00,
   // Wait 1 second for the ping ack before assuming the connection is dead
-  'grpc.keepalive_timeout_ms': 1_000
+  'grpc.keepalive_timeout_ms': 1_00
 }
 
 function unaryEcho(call, callback) {
@@ -58,9 +59,9 @@ function main() {
     string: 'port',
     default: {port: '50052'}
   });
-  const server = new grpc.Server(keepaliveOptions);
+  const server = new Server(keepaliveOptions);
   server.addService(echoProto.Echo.service, serviceImplementation);
-  server.bindAsync(`0.0.0.0:${argv.port}`, grpc.ServerCredentials.createInsecure(), (err, port) => {
+  server.bindAsync(`0.0.0.0:${argv.port}`, ServerCredentials.createInsecure(), (err, port) => {
     if (err != null) {
       return console.error(err);
     }

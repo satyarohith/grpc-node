@@ -16,13 +16,14 @@
  *
  */
 
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const parseArgs = require('minimist');
+import { loadPackageDefinition, credentials } from '@grpc/grpc-js';
+import { loadSync } from '@grpc/proto-loader';
+import parseArgs from 'minimist';
+import process from 'node:process';
 
-const PROTO_PATH = __dirname + '/../protos/echo.proto';
+const PROTO_PATH = import.meta.dirname + '/../protos/echo.proto';
 
-const packageDefinition = protoLoader.loadSync(
+const packageDefinition = loadSync(
   PROTO_PATH,
   {keepCase: true,
    longs: String,
@@ -30,13 +31,13 @@ const packageDefinition = protoLoader.loadSync(
    defaults: true,
    oneofs: true
   });
-const echoProto = grpc.loadPackageDefinition(packageDefinition).grpc.examples.echo;
+const echoProto = loadPackageDefinition(packageDefinition).grpc.examples.echo;
 
 const keepaliveOptions = {
   // Ping the server every 10 seconds to ensure the connection is still active
-  'grpc.keepalive_time_ms': 10_000,
+  'grpc.keepalive_time_ms': 100,
   // Wait 1 second for the ping ack before assuming the connection is dead
-  'grpc.keepalive_timeout_ms': 1_000,
+  'grpc.keepalive_timeout_ms': 10,
   // send pings even without active streams
   'grpc.keepalive_permit_without_calls': 1
 }
@@ -46,7 +47,7 @@ function main() {
     string: 'target',
     default: {target: 'localhost:50052'}
   });
-  const client = new echoProto.Echo(argv.target, grpc.credentials.createInsecure(), keepaliveOptions);
+  const client = new echoProto.Echo(argv.target, credentials.createInsecure(), keepaliveOptions);
   client.unaryEcho({message: 'keepalive demo'}, (error, value) => {
     if (error) {
       console.log(`Unexpected error from UnaryEcho: ${error}`);
