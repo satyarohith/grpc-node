@@ -16,14 +16,15 @@
  *
  */
 
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const parseArgs = require('minimist');
-const os = require('os');
+import { loadPackageDefinition, status as _status, credentials } from '@grpc/grpc-js';
+import { loadSync } from '@grpc/proto-loader';
+import parseArgs from 'minimist';
+import { userInfo } from 'node:os';
+import process from "node:process";
 
-const PROTO_PATH = __dirname + '/../protos/helloworld.proto';
+const PROTO_PATH = import.meta.dirname + '/../protos/helloworld.proto';
 
-const packageDefinition = protoLoader.loadSync(
+const packageDefinition = loadSync(
   PROTO_PATH,
   {keepCase: true,
    longs: String,
@@ -31,7 +32,7 @@ const packageDefinition = protoLoader.loadSync(
    defaults: true,
    oneofs: true
   });
-const helloProto = grpc.loadPackageDefinition(packageDefinition).helloworld;
+const helloProto = loadPackageDefinition(packageDefinition).helloworld;
 
 function unaryCall(client, requestId, name, expectedCode) {
   console.log(`[${requestId}] Calling SayHello with name:"${name}"`);
@@ -60,7 +61,7 @@ function streamingCall(client, requestId, name, expectedCode) {
       console.log(`[${requestId}] Received response ${value.message}`);
     });
     call.on('status', status => {
-      console.log(`[${requestId}] Received status with code=${grpc.status[status.code]} details=${status.details}`);
+      console.log(`[${requestId}] Received status with code=${_status[status.code]} details=${status.details}`);
       resolve();
     });
     call.on('error', error => {
@@ -78,12 +79,12 @@ async function main() {
     string: 'target',
     default: {target: 'localhost:50052'}
   });
-  const client = new helloProto.Greeter(argv.target, grpc.credentials.createInsecure());
-  const name = os.userInfo().username ?? 'unknown';
-  await unaryCall(client, 1, '', grpc.status.INVALID_ARGUMENT);
-  await unaryCall(client, 2, name, grpc.status.OK);
-  await streamingCall(client, 3, '', grpc.status.INVALID_ARGUMENT);
-  await streamingCall(client, 4, name, grpc.status.OK);
+  const client = new helloProto.Greeter(argv.target, credentials.createInsecure());
+  const name = userInfo().username ?? 'unknown';
+  await unaryCall(client, 1, '', _status.INVALID_ARGUMENT);
+  await unaryCall(client, 2, name, _status.OK);
+  await streamingCall(client, 3, '', _status.INVALID_ARGUMENT);
+  await streamingCall(client, 4, name, _status.OK);
 }
 
 main();

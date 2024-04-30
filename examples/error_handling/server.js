@@ -15,11 +15,11 @@
  * limitations under the License.
  *
  */
+import grpc from '@grpc/grpc-js';
+import protoLoader from '@grpc/proto-loader';
 
-var PROTO_PATH = __dirname + '/../protos/helloworld.proto';
+var PROTO_PATH = import.meta.dirname + '/../protos/helloworld.proto';
 
-var grpc = require('@grpc/grpc-js');
-var protoLoader = require('@grpc/proto-loader');
 var packageDefinition = protoLoader.loadSync(
     PROTO_PATH,
     {keepCase: true,
