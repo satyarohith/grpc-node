@@ -16,13 +16,14 @@
  *
  */
 
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const parseArgs = require('minimist');
+import { loadPackageDefinition, status, Server, ServerCredentials, credentials } from '@grpc/grpc-js';
+import { loadSync } from '@grpc/proto-loader';
+import parseArgs from 'minimist';
+import process from 'node:process';
 
-const PROTO_PATH = __dirname + '/../protos/echo.proto';
+const PROTO_PATH = import.meta.dirname + '/../protos/echo.proto';
 
-const packageDefinition = protoLoader.loadSync(
+const packageDefinition = loadSync(
   PROTO_PATH,
   {keepCase: true,
    longs: String,
@@ -30,7 +31,7 @@ const packageDefinition = protoLoader.loadSync(
    defaults: true,
    oneofs: true
   });
-const echoProto = grpc.loadPackageDefinition(packageDefinition).grpc.examples.echo;
+const echoProto = loadPackageDefinition(packageDefinition).grpc.examples.echo;
 
 const PROPAGATE_PREFIX = '[propagate me]';
 
@@ -82,7 +83,7 @@ function bidirectionalStreamingEcho(call) {
   });
   call.on('end', () => {
     if (lastMessage === null) {
-      call.emit('error', {code: grpc.status.INVALID_ARGUMENT, details: 'request message not received'});
+      call.emit('error', {code: status.INVALID_ARGUMENT, details: 'request message not received'});
     }
     call.end();
   });
@@ -98,15 +99,15 @@ function main() {
     string: 'port',
     default: {port: '50052'}
   });
-  const server = new grpc.Server();
+  const server = new Server();
   server.addService(echoProto.Echo.service, serviceImplementation);
-  server.bindAsync(`0.0.0.0:${argv.port}`, grpc.ServerCredentials.createInsecure(), (err, port) => {
+  server.bindAsync(`0.0.0.0:${argv.port}`, ServerCredentials.createInsecure(), (err, port) => {
     if (err != null) {
       return console.error(err);
     }
     console.log(`gRPC listening on ${port}`)
   });
-  client = new echoProto.Echo(`localhost:${argv.port}`, grpc.credentials.createInsecure());
+  client = new echoProto.Echo(`localhost:${argv.port}`, credentials.createInsecure());
 }
 
 main();

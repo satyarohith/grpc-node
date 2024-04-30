@@ -16,13 +16,14 @@
  *
  */
 
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const parseArgs = require('minimist');
+import { loadPackageDefinition, status as _status, credentials } from '@grpc/grpc-js';
+import { loadSync } from '@grpc/proto-loader';
+import parseArgs from 'minimist';
+import process from 'node:process';
 
-const PROTO_PATH = __dirname + '/../protos/echo.proto';
+const PROTO_PATH = import.meta.dirname + '/../protos/echo.proto';
 
-const packageDefinition = protoLoader.loadSync(
+const packageDefinition = loadSync(
   PROTO_PATH,
   {keepCase: true,
    longs: String,
@@ -30,7 +31,7 @@ const packageDefinition = protoLoader.loadSync(
    defaults: true,
    oneofs: true
   });
-const echoProto = grpc.loadPackageDefinition(packageDefinition).grpc.examples.echo;
+const echoProto = loadPackageDefinition(packageDefinition).grpc.examples.echo;
 
 function unaryCall(client, requestId, message, expectedCode) {
   return new Promise((resolve, reject) => {
@@ -41,9 +42,9 @@ function unaryCall(client, requestId, message, expectedCode) {
       if (error) {
         code = error.code;
       } else {
-        code = grpc.status.OK;
+        code = _status.OK;
       }
-      console.log(`[${requestId}] wanted = ${grpc.status[expectedCode]} got = ${grpc.status[code]}`);
+      console.log(`[${requestId}] wanted = ${_status[expectedCode]} got = ${_status[code]}`);
       resolve();
     });
   });
@@ -58,7 +59,7 @@ function streamingCall(client, requestId, message, expectedCode) {
       // Consume all response messages
     });
     call.on('status', status => {
-      console.log(`[${requestId}] wanted = ${grpc.status[expectedCode]} got = ${grpc.status[status.code]}`);
+      console.log(`[${requestId}] wanted = ${_status[expectedCode]} got = ${_status[status.code]}`);
       resolve();
     });
     call.on('error', () => {
@@ -74,19 +75,19 @@ async function main() {
     string: 'target',
     default: {target: 'localhost:50052'}
   });
-  const client = new echoProto.Echo(argv.target, grpc.credentials.createInsecure());
+  const client = new echoProto.Echo(argv.target, credentials.createInsecure());
   // A successful request
-  await unaryCall(client, 1, 'world', grpc.status.OK);
+  await unaryCall(client, 1, 'world', _status.OK);
   // Exceeds deadline
-  await unaryCall(client, 2, 'delay', grpc.status.DEADLINE_EXCEEDED);
+  await unaryCall(client, 2, 'delay', _status.DEADLINE_EXCEEDED);
   // A successful request with propagated deadline
-  await unaryCall(client, 3, '[propagate me]world', grpc.status.OK);
+  await unaryCall(client, 3, '[propagate me]world', _status.OK);
   // Exceeds propagated deadline
-  await unaryCall(client, 4, '[propagate me][propagate me]world', grpc.status.DEADLINE_EXCEEDED);
+  await unaryCall(client, 4, '[propagate me][propagate me]world', _status.DEADLINE_EXCEEDED);
   // Receives a response from the stream successfully
-  await streamingCall(client, 5, '[propagate me]world', grpc.status.OK);
+  await streamingCall(client, 5, '[propagate me]world', _status.OK);
   // Exceeds propagated deadline before receiving a response
-  await streamingCall(client, 6, '[propagate me][propagate me]world', grpc.status.DEADLINE_EXCEEDED);
+  await streamingCall(client, 6, '[propagate me][propagate me]world', _status.DEADLINE_EXCEEDED);
 }
 
 main();
