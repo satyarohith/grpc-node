@@ -16,13 +16,14 @@
  *
  */
 
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const parseArgs = require('minimist');
+import { loadPackageDefinition, Metadata, Server, ServerCredentials } from '@grpc/grpc-js';
+import { loadSync } from '@grpc/proto-loader';
+import parseArgs from 'minimist';
+import process from "node:process";
 
-const PROTO_PATH = __dirname + '/../protos/echo.proto';
+const PROTO_PATH = import.meta.dirname + '/../protos/echo.proto';
 
-const packageDefinition = protoLoader.loadSync(
+const packageDefinition = loadSync(
   PROTO_PATH,
   {keepCase: true,
    longs: String,
@@ -30,7 +31,7 @@ const packageDefinition = protoLoader.loadSync(
    defaults: true,
    oneofs: true
   });
-const echoProto = grpc.loadPackageDefinition(packageDefinition).grpc.examples.echo;
+const echoProto = loadPackageDefinition(packageDefinition).grpc.examples.echo;
 
 const STREAMING_COUNT = 10;
 
@@ -44,12 +45,12 @@ function unaryEcho(call, callback) {
     }
   }
 
-  const outgoingHeaders = new grpc.Metadata();
+  const outgoingHeaders = new Metadata();
   outgoingHeaders.set('location', 'MTV');
   outgoingHeaders.set('timestamp', new Date().toISOString());
   call.sendMetadata(outgoingHeaders);
 
-  const outgoingTrailers = new grpc.Metadata();
+  const outgoingTrailers = new Metadata();
   outgoingTrailers.set('timestamp', new Date().toISOString());
 
   console.log(`Request received ${JSON.stringify(call.request)}, sending echo`);
@@ -66,7 +67,7 @@ function serverStreamingEcho(call) {
     }
   }
 
-  const outgoingHeaders = new grpc.Metadata();
+  const outgoingHeaders = new Metadata();
   outgoingHeaders.set('location', 'MTV');
   outgoingHeaders.set('timestamp', new Date().toISOString());
   call.sendMetadata(outgoingHeaders);
@@ -77,7 +78,7 @@ function serverStreamingEcho(call) {
     call.write(call.request);
   }
 
-  const outgoingTrailers = new grpc.Metadata();
+  const outgoingTrailers = new Metadata();
   outgoingTrailers.set('timestamp', new Date().toISOString());
   call.end(outgoingTrailers);
 }
@@ -92,7 +93,7 @@ function clientStreamingEcho(call, callback) {
     }
   }
 
-  const outgoingHeaders = new grpc.Metadata();
+  const outgoingHeaders = new Metadata();
   outgoingHeaders.set('location', 'MTV');
   outgoingHeaders.set('timestamp', new Date().toISOString());
   call.sendMetadata(outgoingHeaders);
@@ -103,7 +104,7 @@ function clientStreamingEcho(call, callback) {
     lastReceivedMessage = value.message;
   });
   call.on('end', () => {
-    const outgoingTrailers = new grpc.Metadata();
+    const outgoingTrailers = new Metadata();
     outgoingTrailers.set('timestamp', new Date().toISOString());
     callback(null, {message: lastReceivedMessage}, outgoingTrailers);
   });
@@ -119,7 +120,7 @@ function bidirectionalStreamingEcho(call) {
     }
   }
 
-  const outgoingHeaders = new grpc.Metadata();
+  const outgoingHeaders = new Metadata();
   outgoingHeaders.set('location', 'MTV');
   outgoingHeaders.set('timestamp', new Date().toISOString());
   call.sendMetadata(outgoingHeaders);
@@ -129,7 +130,7 @@ function bidirectionalStreamingEcho(call) {
     call.write(value);
   });
   call.on('end', () => {
-    const outgoingTrailers = new grpc.Metadata();
+    const outgoingTrailers = new Metadata();
     outgoingTrailers.set('timestamp', new Date().toISOString());
     call.end(outgoingTrailers);
   });
@@ -147,9 +148,9 @@ function main() {
     string: 'port',
     default: {port: '50052'}
   });
-  const server = new grpc.Server();
+  const server = new Server();
   server.addService(echoProto.Echo.service, serviceImplementation);
-  server.bindAsync(`0.0.0.0:${argv.port}`, grpc.ServerCredentials.createInsecure(), (err, port) => {
+  server.bindAsync(`0.0.0.0:${argv.port}`, ServerCredentials.createInsecure(), (err, port) => {
     if (err != null) {
       return console.error(err);
     }

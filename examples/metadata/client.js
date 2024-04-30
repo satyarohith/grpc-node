@@ -16,13 +16,14 @@
  *
  */
 
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const parseArgs = require('minimist');
+import { loadPackageDefinition, Metadata, credentials } from '@grpc/grpc-js';
+import { loadSync } from '@grpc/proto-loader';
+import parseArgs from 'minimist';
+import process from "node:process";
 
-const PROTO_PATH = __dirname + '/../protos/echo.proto';
+const PROTO_PATH = import.meta.dirname + '/../protos/echo.proto';
 
-const packageDefinition = protoLoader.loadSync(
+const packageDefinition = loadSync(
   PROTO_PATH,
   {keepCase: true,
    longs: String,
@@ -30,14 +31,14 @@ const packageDefinition = protoLoader.loadSync(
    defaults: true,
    oneofs: true
   });
-const echoProto = grpc.loadPackageDefinition(packageDefinition).grpc.examples.echo;
+const echoProto = loadPackageDefinition(packageDefinition).grpc.examples.echo;
 
 const STREAMING_COUNT = 10;
 
 function unaryCallWithMetadata(client, message) {
   return new Promise((resolve, reject) => {
     console.log('--- unary ---');
-    const requestMetadata = new grpc.Metadata();
+    const requestMetadata = new Metadata();
     requestMetadata.set('timestamp', new Date().toISOString());
     const call = client.unaryEcho({message}, requestMetadata, (error, value) => {
       if (error) {
@@ -85,7 +86,7 @@ function unaryCallWithMetadata(client, message) {
 function serverStreamingWithMetadata(client, message) {
   return new Promise((resolve, reject) => {
     console.log('--- server streaming ---');
-    const requestMetadata = new grpc.Metadata();
+    const requestMetadata = new Metadata();
     requestMetadata.set('timestamp', new Date().toISOString());
     const call = client.serverStreamingEcho({message}, requestMetadata);
     call.on('metadata', metadata => {
@@ -132,7 +133,7 @@ function serverStreamingWithMetadata(client, message) {
 function clientStreamingWithMetadata(client, message) {
   return new Promise((resolve, reject) => {
     console.log('--- client streaming ---');
-    const requestMetadata = new grpc.Metadata();
+    const requestMetadata = new Metadata();
     requestMetadata.set('timestamp', new Date().toISOString());
     const call = client.clientStreamingEcho(requestMetadata, (error, value) => {
       if (error) {
@@ -184,7 +185,7 @@ function clientStreamingWithMetadata(client, message) {
 function bidirectionalWithMetadata(client, message) {
   return new Promise((resolve, reject) => {
     console.log('--- bidirectional ---');
-    const requestMetadata = new grpc.Metadata();
+    const requestMetadata = new Metadata();
     requestMetadata.set('timestamp', new Date().toISOString());
     const call = client.bidirectionalStreamingEcho(requestMetadata);
     call.on('metadata', metadata => {
@@ -245,7 +246,7 @@ async function main() {
     string: 'target',
     default: {target: 'localhost:50052'}
   });
-  const client = new echoProto.Echo(argv.target, grpc.credentials.createInsecure());
+  const client = new echoProto.Echo(argv.target, credentials.createInsecure());
   await unaryCallWithMetadata(client, message);
   await asyncWait(1000);
 
