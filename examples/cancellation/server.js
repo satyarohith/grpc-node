@@ -16,13 +16,14 @@
  *
  */
 
-const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const parseArgs = require('minimist');
+import { loadPackageDefinition, Server, ServerCredentials, credentials } from '@grpc/grpc-js';
+import { loadSync } from '@grpc/proto-loader';
+import parseArgs from 'minimist';
+import process from "node:process";
 
-const PROTO_PATH = __dirname + '/../protos/echo.proto';
+const PROTO_PATH = import.meta.dirname + '/../protos/echo.proto';
 
-const packageDefinition = protoLoader.loadSync(
+const packageDefinition = loadSync(
   PROTO_PATH,
   {keepCase: true,
    longs: String,
@@ -30,7 +31,7 @@ const packageDefinition = protoLoader.loadSync(
    defaults: true,
    oneofs: true
   });
-const echoProto = grpc.loadPackageDefinition(packageDefinition).grpc.examples.echo;
+const echoProto = loadPackageDefinition(packageDefinition).grpc.examples.echo;
 
 function bidirectionalStreamingEcho(call) {
   call.on('data', value => {
@@ -57,12 +58,12 @@ function main() {
     string: 'port',
     default: {port: '50052'}
   });
-  const server = new grpc.Server();
+  const server = new Server();
   server.addService(echoProto.Echo.service, serviceImplementation);
-  server.bindAsync(`0.0.0.0:${argv.port}`, grpc.ServerCredentials.createInsecure(), () => {
+  server.bindAsync(`0.0.0.0:${argv.port}`, ServerCredentials.createInsecure(), () => {
     server.start();
   });
-  client = new echoProto.Echo(`localhost:${argv.port}`, grpc.credentials.createInsecure());
+  let client = new echoProto.Echo(`localhost:${argv.port}`, credentials.createInsecure());
 }
 
 main();
