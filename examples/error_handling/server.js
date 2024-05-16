@@ -60,8 +60,11 @@ function sayHelloStreamReply(call) {
 function main() {
   var server = new grpc.Server();
   server.addService(hello_proto.Greeter.service, {sayHello: sayHello, sayHelloStreamReply: sayHelloStreamReply});
-  server.bindAsync('0.0.0.0:50052', grpc.ServerCredentials.createInsecure(), () => {
-    server.start();
+  server.bindAsync('0.0.0.0:50052', grpc.ServerCredentials.createInsecure(), (err, port) => {
+    if (err != null) {
+      return console.error(err);
+    }
+    console.log(`gRPC listening on ${port}`)
   });
 }
 
