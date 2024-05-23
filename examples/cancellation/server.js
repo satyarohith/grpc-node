@@ -60,8 +60,11 @@ function main() {
   });
   const server = new Server();
   server.addService(echoProto.Echo.service, serviceImplementation);
-  server.bindAsync(`0.0.0.0:${argv.port}`, ServerCredentials.createInsecure(), () => {
-    server.start();
+  server.bindAsync(`0.0.0.0:${argv.port}`, ServerCredentials.createInsecure(), (err) => {
+    if (err != null) {
+      return console.error(err);
+    }
+    console.log(`gRPC listening on ${port}`)
   });
   let client = new echoProto.Echo(`localhost:${argv.port}`, credentials.createInsecure());
 }
