@@ -64,7 +64,7 @@ function main() {
     if (err != null) {
       return console.error(err);
     }
-    console.log(`gRPC listening on ${port}`)
+    console.log(`gRPC listening on ${argv.port}`)
   });
   let client = new echoProto.Echo(`localhost:${argv.port}`, credentials.createInsecure());
 }
